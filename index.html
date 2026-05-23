@@ -39,16 +39,16 @@
             --color-whatsapp-hover: #5d7e60;
 
             /* Identidade Dashboard do Admin */
-            --bg-admin: #f8fafc;
-            --color-admin-card: #ffffff;
-            --color-admin-text-dark: #0f172a;
-            --color-admin-text-light: #64748b;
-            --color-admin-accent: #6366f1;
-            --color-admin-accent-hover: #4f46e5;
-            --color-admin-success: #10b981;
-            --color-admin-danger: #ef4444;
-            --color-admin-warning: #f59e0b;
-            --color-admin-border: #e2e8f0;
+            --bg-admin: #faf7f2;
+            --color-admin-card: rgba(255, 255, 255, 0.72);
+            --color-admin-text-dark: #43413d;
+            --color-admin-text-light: #7c7a76;
+            --color-admin-accent: #6e7b55;
+            --color-admin-accent-hover: #586344;
+            --color-admin-success: #7ea081;
+            --color-admin-danger: #b85d63;
+            --color-admin-warning: #d48c6a;
+            --color-admin-border: rgba(110, 123, 85, 0.18);
 
             /* Transições Globais */
             --transition-smooth: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
@@ -599,6 +599,11 @@
            ========================================================================== */
         body.admin-mode {
             background-color: var(--bg-admin);
+            background-image: 
+                radial-gradient(rgba(143, 151, 121, 0.04) 1px, transparent 0),
+                radial-gradient(rgba(232, 197, 200, 0.04) 1px, transparent 0);
+            background-size: 32px 32px;
+            background-position: 0 0, 16px 16px;
             font-family: 'Plus Jakarta Sans', sans-serif;
             color: var(--color-admin-text-dark);
         }
@@ -767,10 +772,10 @@
             justify-content: center;
         }
 
-        .kpi-revenue .kpi-icon { background: rgba(99, 102, 241, 0.1); color: var(--color-admin-accent); }
-        .kpi-costs .kpi-icon { background: rgba(239, 68, 68, 0.1); color: var(--color-admin-danger); }
-        .kpi-profits .kpi-icon { background: rgba(16, 185, 129, 0.1); color: var(--color-admin-success); }
-        .kpi-margin .kpi-icon { background: rgba(245, 158, 11, 0.1); color: var(--color-admin-warning); }
+        .kpi-revenue .kpi-icon { background: rgba(110, 123, 85, 0.12); color: var(--color-admin-accent); }
+        .kpi-costs .kpi-icon { background: rgba(184, 93, 99, 0.12); color: var(--color-admin-danger); }
+        .kpi-profits .kpi-icon { background: rgba(126, 160, 129, 0.12); color: var(--color-admin-success); }
+        .kpi-margin .kpi-icon { background: rgba(212, 140, 106, 0.12); color: var(--color-admin-warning); }
 
         .kpi-value {
             font-size: 26px;
@@ -2445,7 +2450,7 @@
                     document.body.className = 'admin-mode';
                     actionBtn.className = 'btn-toggle-view btn-to-vitrine';
                     actionBtn.innerHTML = '<i data-lucide="eye"></i> Voltar à Vitrine';
-                    watercolors.style.display = 'none';
+                    watercolors.style.display = 'block';
                     // Exibe o botão de logout na barra administrativa
                     document.getElementById('nav-logout-btn').style.display = 'flex';
                 } else {

@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Atelier Haute Couture</title>
+  
+  <!-- Tailwind CSS V3 CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Google Fonts - Cormorant Garamond & Montserrat -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Montserrat:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Alpine.js -->
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+  <style>
+    /* Styling settings matching designer directives */
+    body {
+      font-family: 'Montserrat', sans-serif;
+    }
+    .serif-text {
+      font-family: 'Cormorant Garamond', serif;
+    }
+    /* Texture class simulating raw tissue / woven linen */
+    .fabric-texture {
+      background-color: #f6f3eb;
+      background-image: 
+        linear-gradient(90deg, rgba(120, 100, 80, 0.035) 50%, transparent 50%),
+        linear-gradient(rgba(120, 100, 80, 0.035) 50%, transparent 50%);
+      background-size: 3px 3px;
+    }
+  </style>
+</head>
+<body class="fabric-texture min-h-screen text-slate-800 relative selection:bg-[#dfc3b5] selection:text-stone-900 overflow-x-hidden">
+
+  <!-- Aquarela Background Blurs -->
+  <div class="absolute top-10 left-10 w-96 h-96 rounded-full bg-[#e3b8a6] opacity-30 blur-3xl pointer-events-none"></div>
+  <div class="absolute bottom-20 right-10 w-[24rem] h-[24rem] rounded-full bg-[#c3cdbc] opacity-25 blur-3xl pointer-events-none"></div>
+  <div class="absolute top-1/2 left-1/3 w-80 h-80 rounded-full bg-[#dbcaa1] opacity-20 blur-3xl pointer-events-none"></div>
+
+  <!-- Main Alpine Container -->
+  <div x-data="atelierApp()" x-init="initApp()" class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 z-10">
+    
+    <!-- Top Bar with Clock and Admin Login -->
+    <header class="flex flex-col sm:flex-row justify-between items-center border-b border-stone-200/60 pb-8 mb-12 gap-4">
+      <div class="text-center sm:text-left">
+        <h1 class="serif-text text-4xl sm:text-5xl font-light tracking-tight text-stone-900 select-none">
+          Atelier <span class="italic font-normal text-[#966b57]">Haute Couture</span>
+        </h1>
+        <p class="text-xs uppercase tracking-[0.25em] text-stone-500 font-light mt-1">Alta Maroquinerie Autoral & Curadoria</p>
+      </div>
+
+      <div class="flex items-center gap-4">
+        <div class="text-right hidden md:block">
+          <p class="text-[10px] uppercase font-mono tracking-widest text-[#a88d7f]">Horário de Paris</p>
+          <p class="text-[11px] font-mono font-medium text-stone-600 font-semibold" x-text="serverClock"></p>
+        </div>
+        
+        <!-- Private admin trigger -->
+        <button @click="openLoginModal()" class="flex items-center gap-1 text-xs border border-stone-300 text-stone-700 font-light hover:bg-[#966b57]/5 hover:border-[#966b57] px-4 py-2 rounded-full transition-all cursor-pointer" x-show="!loggedUser">
+          <i data-lucide="lock" class="w-3 h-3 text-[#966b57]"></i> Admin Painel
+        </button>
+
+        <div x-show="loggedUser" class="flex items-center gap-3" x-cloak>
+          <span class="text-xs text-stone-600 bg-stone-100 px-3 py-1.5 rounded-full font-light">
+            ✨ Admin: <span class="font-medium" x-text="loggedUser.email"></span>
+          </span>
+          <button @click="logout()" class="p-2 border border-stone-200 text-rose-800 hover:bg-rose-50 rounded-full transition-all cursor-pointer" title="Sair da sessão">
+            <i data-lucide="log-out" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Global Alert Feedback banner -->
+    <div x-transition class="fixed top-6 right-6 z-50 bg-stone-900 border border-[#966b57]/40 text-stone-100 text-xs px-5 py-3 rounded-2xl shadow-xl flex items-center gap-2 max-w-sm" x-show="feedbackText" x-text="feedbackText" x-cloak></div>
+
+    <!-- MAIN INTERFACES (CLIENT EXPOSITION OR ADMIN MODE) -->
+    
+    <!-- GUEST USER (CLIENT SHOWCASE VIEW) -->
+    <main x-show="!adminPageActive">
+      
+      <!-- Search Banner -->
+      <div class="mb-10 max-w-md mx-auto">
+        <div class="relative">
+          <input type="text" x-model="searchQuery" placeholder="Pesquisar entre as obras autorais..." class="w-full bg-white/65 backdrop-blur-md text-slate-800 text-sm border border-stone-200 placeholder:text-stone-400 px-5 py-3.5 pr-12 rounded-[1.5rem] focus:outline-none focus:border-[#966b57] focus:ring-1 focus:ring-[#966b57] shadow-sm transition-all text-center">
+          <i data-lucide="search" class="absolute right-4 top-4 text-stone-400 w-4.5 h-4.5"></i>
+        </div>
+      </div>
+
+      <!-- No items backup warning -->
+      <div class="text-center py-20 px-4 bg-white/30 border border-stone-200/50 rounded-3xl max-w-2xl mx-auto" x-show="bolsas.length === 0">
+        <i data-lucide="shopping-bag" class="w-10 h-10 text-stone-300 mx-auto mb-4"></i>
+        <h3 class="serif-text text-xl font-light text-stone-800">Acervo Vazio no Momento</h3>
+        <p class="text-sm text-stone-500 font-light mt-2">Nossos artesãos estão tecendo novos modelos neste exato momento. Visite o painel administrativo para carregar peças exemplo ou registrá-las.</p>
+      </div>
+
+      <!-- Handsomely Spaced Grid of Products -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+        <template x-for="bolsa in filteredBolsas" :key="bolsa.id">
+          <div class="group bg-white/45 backdrop-blur-sm rounded-[2rem] border border-stone-200/40 hover:border-stone-200 shadow-[0_15px_35px_-15px_rgba(139,115,85,0.06)] hover:shadow-[0_20px_45px_-10px_rgba(139,115,85,0.12)] transition-all duration-500 overflow-hidden flex flex-col h-full transform hover:-translate-y-1">
+            
+            <!-- Image box with soft borders -->
+            <div class="relative pt-[110%] w-full bg-stone-100 overflow-hidden border-b border-stone-100/50">
+              <img :src="bolsa.fotoUrl || 'https://images.unsplash.com/photo-1584917865442-de89df76afd3'" :alt="bolsa.nome" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
+              <span class="absolute top-4 right-4 bg-white/80 backdrop-blur-md text-[#966b57] text-[10px] uppercase font-light tracking-widest px-3 py-1 rounded-full border border-stone-200/40">Alta Costura</span>
+            </div>
+
+            <!-- Content Area -->
+            <div class="p-6 sm:p-8 flex flex-col flex-grow justify-between">
+              <div>
+                <h3 class="serif-text text-2xl font-light text-stone-900 group-hover:text-[#966b57] transition-colors" x-text="bolsa.nome font-semibold"></h3>
+                <p class="text-xs text-[#a88d7f] font-mono tracking-widest uppercase mt-1" x-text="'R$ ' + parseFloat(bolsa.preco).toLocaleString('pt-BR', {minimumFractionDigits: 2})"></p>
+                <p class="text-stone-600 font-light text-sm mt-3.5 leading-relaxed" x-text="bolsa.descricao || 'Nenhuma descrição fornecida para esta obra prima.'"></p>
+              </div>
+
+              <!-- Organic olive / terracotta sutil whatsapp button -->
+              <div class="mt-8">
+                <a :href="'https://api.whatsapp.com/send?phone=5548999999999&text=' + encodeURIComponent('Olá! Fiquei encantada por esta bolsa: ' + bolsa.nome + ' (R$ ' + parseFloat(bolsa.preco).toLocaleString('pt-BR', {minimumFractionDigits: 2}) + '). Gostaria de encomendar! ✨')" target="_blank" class="w-full flex items-center justify-center gap-2 bg-[#6b755e] hover:bg-[#5b6450] text-stone-100 text-xs uppercase tracking-wider font-medium py-3 rounded-full shadow-md shadow-[#6b755e]/15 hover:shadow-lg transition-all text-center">
+                  Soliçitar sob encomenda ✨
+                </a>
+              </div>
+            </div>
+          </div>
+        </template>
+      </div>
+
+      <!-- Sticky bottom shortcut to admin if logged -->
+      <div x-show="loggedUser" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-stone-900 border border-[#966b57]/40 text-white rounded-full px-6 py-3 flex items-center gap-3 shadow-2xl" x-cloak>
+        <span class="text-xs font-light text-stone-300">Você está logado.</span>
+        <button @click="adminPageActive = true" class="text-xs uppercase tracking-wider text-[#dfc3b5] border-l border-stone-700 pl-3 font-semibold hover:text-white transition-colors cursor-pointer">
+          Ir ao Painel →
+        </button>
+      </div>
+    </main>
+
+    <!-- ADMIN PANEL & FINANCE DASHBOARD -->
+    <main x-show="adminPageActive" x-transition x-cloak class="space-y-10">
+      
+      <!-- Dashboard Sub-nav -->
+      <div class="flex justify-between items-center bg-white/70 backdrop-blur-md rounded-2xl border border-stone-200/40 p-4 shadow-sm">
+        <div class="flex items-center gap-2">
+          <button @click="setViewTab('catalog')" :class="tab === 'catalog' ? 'bg-[#966b57] text-white' : 'text-stone-700 hover:bg-stone-50'" class="px-4 py-2 rounded-xl text-xs uppercase tracking-wider font-medium transition-all cursor-pointer">
+            1. Catálogo / Peças
+          </button>
+          <button @click="setViewTab('sales')" :class="tab === 'sales' ? 'bg-[#966b57] text-white' : 'text-stone-700 hover:bg-stone-50'" class="px-4 py-2 rounded-xl text-xs uppercase tracking-wider font-medium transition-all cursor-pointer">
+            2. Vendas & Fluxo
+          </button>
+        </div>
+
+        <button @click="adminPageActive = false" class="flex items-center gap-1.5 text-xs text-stone-600 border border-stone-300 hover:bg-stone-100 px-4 py-2 rounded-xl transition-all cursor-pointer">
+          Voltar à Vitrine Clientes
+        </button>
+      </div>
+
+      <!-- TABS RENDERING -->
+
+      <div x-show="tab === 'catalog'" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        <!-- Registration Form -->
+        <div class="lg:col-span-1 bg-white/80 p-6 sm:p-8 rounded-3xl border border-stone-200/30 shadow-md">
+          <h3 class="serif-text text-2xl text-stone-900 mb-6 font-light" x-text="editId ? 'Editar Peça Autoral' : 'Registrar Nova Bolsa'"></h3>
+          
+          <form @submit.prevent="saveBolsa()" class="space-y-4">
+            <div>
+              <label class="block text-xs text-stone-500 font-medium mb-1">Nome da Bolsa *</label>
+              <input type="text" x-model="formBolsa.nome" placeholder="Ex: Clutch Argila Seca" required class="w-full text-slate-800 bg-stone-50/50 border border-stone-200 text-sm p-3 rounded-xl focus:outline-none focus:border-[#966b57] transition-all">
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs text-stone-500 font-medium mb-1">Preço Consumidor (R$) *</label>
+                <input type="number" step="0.01" x-model="formBolsa.preco" placeholder="580.00" required class="w-full text-slate-800 bg-stone-50/50 border border-stone-200 text-sm p-3 rounded-xl focus:outline-none focus:border-[#966b57] transition-all">
+              </div>
+              <div>
+                <label class="block text-xs text-stone-500 font-medium mb-1">Custo Matéria Prima (R$) *</label>
+                <input type="number" step="0.01" x-model="formBolsa.custo" placeholder="180.00" required class="w-full text-slate-800 bg-stone-50/50 border border-stone-200 text-sm p-3 rounded-xl focus:outline-none focus:border-[#966b57] transition-all">
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs text-stone-500 font-medium mb-1">Selecione Foto Local (Hospeda no ImgBB) *</label>
+              <input type="file" @change="uploadImgBB($event)" class="w-full text-xs text-stone-500 bg-stone-50/50 border border-stone-200 p-2.5 rounded-xl cursor-pointer focus:outline-none file:mr-4 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-[11px] file:uppercase file:tracking-wider file:font-semibold file:bg-[#966b57]/10 file:text-[#966b57] hover:file:bg-[#966b57]/20 file:transition-all">
+              <p class="text-[10px] text-stone-400 mt-1">Sua imagem será hospedada na nossa conta de nuvem do ImgBB.</p>
+              
+              <!-- Loader -->
+              <div x-show="uploadingLocal" class="flex items-center gap-2 mt-2 bg-stone-50 border border-stone-200/50 p-2.5 rounded-xl" x-cloak>
+                <div class="animate-spin rounded-full h-3.5 w-3.5 border-2 border-[#966b57] border-t-transparent"></div>
+                <span class="text-[11px] font-mono text-stone-600 font-medium">Tecendo imagem... Aguarde</span>
+              </div>
+
+              <div x-show="formBolsa.fotoUrl && !uploadingLocal" class="mt-2 text-[10px] text-[#6d7f6c] truncate flex items-center gap-1 bg-[#6d7f6c]/5 border border-[#6d7f6c]/15 px-3 py-1.5 rounded-xl" x-cloak>
+                <i data-lucide="check" class="w-3.5 h-3.5 flex-shrink-0"></i> Imagem pronta! URL salva.
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs text-stone-500 font-medium mb-1">Descrição Poética / Materiais</label>
+              <textarea rows="4" x-model="formBolsa.descricao" placeholder="Descreva as amarrações, texturas dadas pelo tear, tingimento vegetal, etc." class="w-full text-slate-800 bg-stone-50/50 border border-stone-200 text-sm p-3 rounded-xl focus:outline-none focus:border-[#966b57] transition-all"></textarea>
+            </div>
+
+            <div class="flex gap-2 pt-3">
+              <button type="submit" :disabled="uploadingLocal" class="flex-grow bg-[#966b57] hover:bg-[#855a47] text-white text-xs uppercase tracking-wider py-3 rounded-xl cursor-pointer transition-all disabled:opacity-50">
+                Salvar Peça no Acervo
+              </button>
+              <button type="button" x-show="editId" @click="resetBolsaForm()" class="bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs uppercase tracking-wider px-4 rounded-xl cursor-pointer transition-all" x-cloak>
+                Cancelar
+              </button>
+            </div>
+          </form>
+
+          <!-- Bootstrap preset button -->
+          <button @click="bootstrapPresets()" class="w-full mt-6 flex items-center justify-center gap-2 border border-stone-300 text-stone-600 bg-transparent hover:bg-stone-50 text-[11px] uppercase tracking-wider py-3.5 rounded-xl transition-all cursor-pointer">
+            <i data-lucide="sparkles" class="w-3.5 h-3.5 text-[#966b57]"></i> Carregar Amostras Iniciais
+          </button>
+        </div>
+
+        <!-- Catalog list Table -->
+        <div class="lg:col-span-2 bg-white/80 p-6 sm:p-8 rounded-3xl border border-stone-200/30 shadow-md">
+          <h3 class="serif-text text-2xl text-stone-900 mb-6 font-light">Acervo Cadastrado</h3>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="border-b border-stone-200/70 text-[10px] uppercase font-mono tracking-wider text-stone-500">
+                  <th class="pb-3.5 font-semibold">Foto</th>
+                  <th class="pb-3.5 font-semibold">Peça / Bolsa</th>
+                  <th class="pb-3.5 font-semibold">Preço</th>
+                  <th class="pb-3.5 font-semibold">Custo</th>
+                  <th class="pb-3.5 font-semibold">Lucro Previsto</th>
+                  <th class="pb-3.5 text-right font-semibold">Ações</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-stone-100 text-xs">
+                <template x-for="item in bolsas" :key="item.id">
+                  <tr class="hover:bg-stone-50/50">
+                    <td class="py-3">
+                      <div class="w-10 h-10 rounded-lg bg-stone-100 border border-stone-200/50 overflow-hidden">
+                        <img :src="item.fotoUrl" class="w-full h-full object-cover">
+                      </div>
+                    </td>
+                    <td class="py-3 font-medium text-stone-900" x-text="item.nome"></td>
+                    <td class="py-3 font-mono text-stone-600" x-text="'R$ ' + parseFloat(item.preco).toFixed(2)"></td>
+                    <td class="py-3 font-mono text-stone-600" x-text="'R$ ' + parseFloat(item.custo).toFixed(2)"></td>
+                    <td class="py-3 font-mono text-emerald-700 font-semibold" x-text="'R$ ' + (item.preco - item.custo).toFixed(2)"></td>
+                    <td class="py-3 text-right">
+                      <button @click="editBolsa(item)" class="p-1.5 hover:bg-stone-100 text-stone-600 rounded-lg transition-all mx-1 cursor-pointer" title="Editar bolsa">
+                        <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
+                      </button>
+                      <button @click="deleteBolsa(item.id)" class="p-1.5 hover:bg-rose-50 text-rose-700 rounded-lg transition-all cursor-pointer" title="Excluir bolsa">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                      </button>
+                    </td>
+                  </tr>
+                </template>
+                <tr x-show="bolsas.length === 0">
+                  <td colspan="6" class="py-8 text-center text-stone-400 font-light italic">Nenhuma bolsa cadastrada ainda.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div x-show="tab === 'sales'" class="space-y-10">
+        
+        <!-- FINANCIAL DASHBOARD CARDS -->
+        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div class="bg-[#966b57]/5 border border-[#966b57]/20 p-6 rounded-[1.75rem] shadow-sm">
+            <div class="flex justify-between items-start">
+              <div>
+                <p class="text-xs font-mono uppercase tracking-wider text-stone-500 font-light">Faturamento Total</p>
+                <h4 class="serif-text text-3xl font-light text-stone-900 mt-2" x-text="'R$ ' + stats.totalFaturamento.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})"></h4>
+              </div>
+              <span class="p-2 bg-[#966b57]/10 text-[#966b57] rounded-xl">
+                <i data-lucide="trending-up" class="w-5 h-5"></i>
+              </span>
+            </div>
+            <p class="text-[10px] text-stone-400 font-light mt-4">Volume bruto de pedidos faturados</p>
+          </div>
+
+          <div class="bg-amber-800/5 border border-amber-800/10 p-6 rounded-[1.75rem] shadow-sm">
+            <div class="flex justify-between items-start">
+              <div>
+                <p class="text-xs font-mono uppercase tracking-wider text-stone-500 font-light">Custo Produção Acumulado</p>
+                <h4 class="serif-text text-3xl font-light text-stone-900 mt-2" x-text="'R$ ' + stats.totalCusto.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})"></h4>
+              </div>
+              <span class="p-2 bg-amber-800/10 text-amber-800 rounded-xl">
+                <i data-lucide="coins" class="w-5 h-5"></i>
+              </span>
+            </div>
+            <p class="text-[10px] text-stone-400 font-light mt-4">Matéria-prima e mão de obra de tecelagem</p>
+          </div>
+
+          <div class="bg-emerald-800/5 border border-emerald-800/10 p-6 rounded-[1.75rem] shadow-sm">
+            <div class="flex justify-between items-start">
+              <div>
+                <p class="text-xs font-mono uppercase tracking-wider text-stone-500 font-light">Lucro Líquido Real</p>
+                <h4 class="serif-text text-3xl font-semibold text-emerald-800 mt-2" x-text="'R$ ' + stats.lucroLiquido.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})"></h4>
+              </div>
+              <span class="p-2 bg-emerald-800/10 text-emerald-800 rounded-xl">
+                <i data-lucide="credit-card" class="w-5 h-5"></i>
+              </span>
+            </div>
+            <p class="text-[10px] text-stone-400 font-light mt-4">Excedente financeiro extraível</p>
+          </div>
+
+          <div class="bg-blue-800/5 border border-blue-800/10 p-6 rounded-[1.75rem] shadow-sm">
+            <div class="flex justify-between items-start">
+              <div>
+                <p class="text-xs font-mono uppercase tracking-wider text-stone-500 font-light">Margem de Lucro Média</p>
+                <h4 class="serif-text text-3xl font-light text-stone-900 mt-2" x-text="stats.margemMedia.toFixed(1) + '%'"></h4>
+              </div>
+              <span class="p-2 bg-blue-800/10 text-blue-800 rounded-xl">
+                <i data-lucide="percent" class="w-5 h-5"></i>
+              </span>
+            </div>
+            <p class="text-[10px] text-stone-400 font-light mt-4">Retorno sobre investimento operacional</p>
+          </div>
+        </section>
+
+        <!-- RECORD SALES AND LIST HISTORY -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          
+          <!-- Lancar Venda Form -->
+          <div class="lg:col-span-1 bg-white/80 p-6 sm:p-8 rounded-3xl border border-stone-200/30 shadow-md">
+            <h3 class="serif-text text-2xl text-stone-900 mb-6 font-light">Lançar Nova Venda</h3>
+
+            <form @submit.prevent="saveVenda()" class="space-y-4">
+              <div>
+                <label class="block text-xs text-stone-500 font-medium mb-1">Selecione o Modelo de Bolsa *</label>
+                <select x-model="formVenda.bolsaId" required class="w-full text-slate-800 bg-stone-50/50 border border-stone-200 text-sm p-3 rounded-xl focus:outline-none focus:border-[#966b57] transition-all cursor-pointer">
+                  <option value="">-- Selecione uma bolsa --</option>
+                  <template x-for="item in bolsas" :key="item.id">
+                    <option :value="item.id" x-text="item.nome + ' (Venda: R$ ' + parseFloat(item.preco).toFixed(2) + ')'"></option>
+                  </template>
+                </select>
+              </div>
+
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs text-stone-500 font-medium mb-1">Quantidade *</label>
+                  <input type="number" min="1" x-model="formVenda.quantidade" required class="w-full text-slate-800 bg-stone-50/50 border border-stone-200 text-sm p-3 rounded-xl focus:outline-none focus:border-[#966b57] transition-all">
+                </div>
+                <div>
+                  <label class="block text-xs text-stone-500 font-medium mb-1">Data da Venda *</label>
+                  <input type="date" x-model="formVenda.data" required class="w-full text-slate-800 bg-stone-50/50 border border-stone-200 text-sm p-3 rounded-xl focus:outline-none focus:border-[#966b57] transition-all cursor-pointer">
+                </div>
+              </div>
+
+              <button type="submit" class="w-full bg-[#966b57] hover:bg-[#855a47] text-white text-xs uppercase tracking-wider py-3.5 rounded-xl cursor-pointer transition-all pt-3">
+                Registrar Venda no Fluxo
+              </button>
+            </form>
+          </div>
+
+          <!-- Sales History List -->
+          <div class="lg:col-span-2 bg-white/80 p-6 sm:p-8 rounded-3xl border border-stone-200/30 shadow-md">
+            <h3 class="serif-text text-2xl text-stone-900 mb-6 font-light">Histórico Cronológico de Fluxo</h3>
+
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr class="border-b border-stone-200/70 text-[10px] uppercase font-mono tracking-wider text-stone-500">
+                    <th class="pb-3.5 font-semibold">Data</th>
+                    <th class="pb-3.5 font-semibold">Bolsa Vendida</th>
+                    <th class="pb-3.5 font-semibold">Qtd</th>
+                    <th class="pb-3.5 font-semibold">Faturamento (Receita)</th>
+                    <th class="pb-3.5 font-semibold">Lucro Real</th>
+                    <th class="pb-3.5 text-right font-semibold">Ação</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-stone-100 text-xs">
+                  <template x-for="venda in vendas" :key="venda.id">
+                    <tr class="hover:bg-stone-50/50">
+                      <td class="py-3 font-mono text-stone-600" x-text="formatDate(venda.data)"></td>
+                      <td class="py-3 font-medium text-stone-900" x-text="venda.bolsaNome"></td>
+                      <td class="py-3 font-mono text-stone-600" x-text="venda.quantidade"></td>
+                      <td class="py-3 font-mono text-stone-900 font-semibold" x-text="'R$ ' + parseFloat(venda.faturamento).toFixed(2)"></td>
+                      <td class="py-3 font-mono text-emerald-800 font-semibold" x-text="'R$ ' + parseFloat(venda.lucroLiquido).toFixed(2)"></td>
+                      <td class="py-3 text-right">
+                        <button @click="deleteVenda(venda.id)" class="p-1.5 hover:bg-rose-50 text-rose-700 rounded-lg transition-all cursor-pointer" title="Excluir venda">
+                          <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                        </button>
+                      </td>
+                    </tr>
+                  </template>
+                  <tr x-show="vendas.length === 0">
+                    <td colspan="6" class="py-8 text-center text-stone-400 font-light italic">Nenhuma venda registrada ainda no período.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- ADMIN AUTHENTICATION DIALOG (MODAL) -->
+    <div x-show="loginModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/40 backdrop-blur-md" x-cloak x-transition>
+      <div class="bg-white/95 border border-stone-200 shadow-2xl rounded-[2.5rem] p-6 sm:p-10 max-w-sm w-full relative">
+        <button @click="loginModalOpen = false" class="absolute top-5 right-5 p-1.5 hover:bg-stone-100 rounded-full text-stone-400 transition-colors cursor-pointer">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+
+        <div class="text-center mb-8">
+          <span class="w-12 h-12 bg-[#966b57]/10 text-[#966b57] rounded-full flex items-center justify-center mx-auto mb-4">
+            <i data-lucide="lock" class="w-6 h-6"></i>
+          </span>
+          <h3 class="serif-text text-3xl font-light text-stone-900">Acesso Restrito</h3>
+          <p class="text-xs text-stone-500 font-light mt-2 leading-relaxed">Conecte-se como Ateliê Marcelo para realizar cadastros, ver margens e gerenciar vendas.</p>
+        </div>
+
+        <button @click="loginWithGoogle()" class="w-full flex items-center justify-center gap-3 bg-stone-900 hover:bg-stone-800 text-white text-xs uppercase tracking-wider font-semibold py-3.5 px-4 rounded-xl shadow-md transition-all cursor-pointer">
+          <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+            <path d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.62z" fill="#FBBC05"/>
+            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/>
+          </svg>
+          Entrar com Conta Google
+        </button>
+
+        <p class="text-[9px] text-stone-400 text-center font-light mt-6 leading-normal">
+          Nota: Somente o e-mail cadastrado terá direitos de alteração no banco de dados corporativo Cloud Firestore.
+        </p>
+      </div>
+    </div>
+
+  </div>
+
+  <footer class="border-t border-stone-200/60 mt-24 py-8 relative z-10 bg-stone-50/20 text-center">
+    <p class="text-[11px] font-light text-stone-500 uppercase tracking-widest leading-loose">Atelier de Bolsas Autoral © 2026</p>
+    <p class="text-[10px] text-stone-400 font-light max-w-sm mx-auto mt-1 leading-relaxed">Concebido artesanalmente com linho lavado, macramê, algodão cru, cores aquarela e couro legítimo.</p>
+  </footer>
+
+  <!-- Firebase Scripts Bundle -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-applet.js" || "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    // Dynamic config object injected using direct parameters
+    const firebaseConfig = {
+      apiKey: "AIzaSyC7c2LPD0EC-WYZvHG1aYJIYTncdGthmFY",
+      authDomain: "gen-lang-client-0712743376.firebaseapp.com",
+      projectId: "gen-lang-client-0712743376",
+      storageBucket: "gen-lang-client-0712743376.firebasestorage.app",
+      messagingSenderId: "936158199904",
+      appId: "1:936158199904:web:b91e925e4b7f33b70f8305",
+      firestoreDatabaseId: "ai-studio-ec688b99-3f08-4494-967d-53773b408895"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // Alpine component code definition
+    window.atelierApp = function() {
+      return {
+        tab: 'catalog',
+        adminPageActive: false,
+        loginModalOpen: false,
+        bolsas: [],
+        vendas: [],
+        searchQuery: '',
+        loggedUser: null,
+        feedbackText: '',
+        serverClock: '',
+        uploadingLocal: false,
+
+        // Handbag Form State
+        formBolsa: { nome: '', preco: '', custo: '', fotoUrl: '', descricao: '' },
+        editId: null,
+
+        // Sale Form State
+        formVenda: { bolsaId: '', quantidade: '1', data: new Date().toISOString().split('T')[0] },
+
+        initApp() {
+          this.startClock();
+          this.listenAuthState();
+          this.bindBolsasSnapshot();
+        },
+
+        startClock() {
+          const tick = () => {
+            const now = new Date();
+            const options = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZone: 'UTC' };
+            this.serverClock = now.toLocaleTimeString('pt-BR', options) + ' UTC';
+          };
+          tick();
+          setInterval(tick, 1000);
+        },
+
+        triggerToast(msg) {
+          this.feedbackText = msg;
+          setTimeout(() => { this.feedbackText = ''; }, 3500);
+        },
+
+        setViewTab(tabName) {
+          this.tab = tabName;
+        },
+
+        listenAuthState() {
+          onAuthStateChanged(auth, (user) => {
+            this.loggedUser = user;
+            if (user && user.email === 'marcelowet2@gmail.com') {
+              this.triggerToast("Acesso administrativo ativo. ✨");
+              this.bindVendasSnapshot();
+            } else {
+              this.vendas = [];
+              this.adminPageActive = false;
+            }
+          });
+        },
+
+        bindBolsasSnapshot() {
+          const q = query(collection(db, "bolsas"), orderBy("nome", "asc"));
+          onSnapshot(q, (snap) => {
+            let list = [];
+            snap.forEach((doc) => {
+              list.push({ id: doc.id, ...doc.data() });
+            });
+            this.bolsas = list;
+            setTimeout(() => { lucide.replace(); }, 200);
+          }, (err) => {
+            console.error(err);
+          });
+        },
+
+        bindVendasSnapshot() {
+          const q = query(collection(db, "vendas"), orderBy("createdAt", "desc"));
+          onSnapshot(q, (snap) => {
+            let list = [];
+            snap.forEach((doc) => {
+              list.push({ id: doc.id, ...doc.data() });
+            });
+            this.vendas = list;
+            setTimeout(() => { lucide.replace(); }, 200);
+          }, (err) => {
+            console.error(err);
+          });
+        },
+
+        openLoginModal() {
+          this.loginModalOpen = true;
+          setTimeout(() => { lucide.replace(); }, 100);
+        },
+
+        async loginWithGoogle() {
+          try {
+            const provider = new GoogleAuthProvider();
+            const res = await signInWithPopup(auth, provider);
+            if(res.user.email === 'marcelowet2@gmail.com') {
+              this.loginModalOpen = false;
+              this.adminPageActive = true;
+            } else {
+              this.triggerToast("Permissão negada. Apenas Ateliê Marcelo.");
+              await signOut(auth);
+            }
+          } catch(e) {
+            this.triggerToast("O login Google falhou.");
+          }
+        },
+
+        async logout() {
+          await signOut(auth);
+          this.loggedUser = null;
+          this.adminPageActive = false;
+          this.triggerToast("Sessão fechada.");
+        },
+
+        async uploadImgBB(e) {
+          const file = e.target.files[0];
+          if(!file) return;
+
+          this.uploadingLocal = true;
+          this.triggerToast("Tecendo imagem...");
+
+          try {
+            const fd = new FormData();
+            fd.append("image", file);
+            const res = await fetch("https://api.imgbb.com/1/upload?key=090c3671633fc37efc0b0f44445dcc4c", {
+              method: 'POST',
+              body: fd
+            });
+            const data = await res.json();
+            if(data?.data?.url) {
+              this.formBolsa.fotoUrl = data.data.url;
+              this.triggerToast("Foto hospedada!");
+            }
+          } catch(err) {
+            this.triggerToast("Hospedagem de foto falhou.");
+          } finally {
+            this.uploadingLocal = false;
+          }
+        },
+
+        async saveBolsa() {
+          if (!this.loggedUser) return;
+          const { nome, preco, custo, fotoUrl, descricao } = this.formBolsa;
+          if(!nome || !preco || !custo || !fotoUrl) {
+            this.triggerToast("Preencha todos os campos.");
+            return;
+          }
+
+          try {
+            if(this.editId) {
+              await updateDoc(doc(db, "bolsas", this.editId), {
+                nome,
+                preco: parseFloat(preco),
+                custo: parseFloat(custo),
+                fotoUrl,
+                descricao,
+                updatedAt: new Date().toISOString()
+              });
+              this.triggerToast("Bolsa atualizada.");
+            } else {
+              await addDoc(collection(db, "bolsas"), {
+                nome,
+                preco: parseFloat(preco),
+                custo: parseFloat(custo),
+                fotoUrl,
+                descricao,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+              });
+              this.triggerToast("Bolsa inaugurada no catálogo.");
+            }
+            this.resetBolsaForm();
+          } catch(e) {
+            this.triggerToast("Erro de permissão no Firestore.");
+          }
+        },
+
+        editBolsa(item) {
+          this.editId = item.id;
+          this.formBolsa = {
+            nome: item.nome,
+            preco: item.preco.toString(),
+            custo: item.custo.toString(),
+            fotoUrl: item.fotoUrl,
+            descricao: item.descricao || ''
+          };
+        },
+
+        async deleteBolsa(id) {
+          if(!confirm("Deseja deletar essa bolsa?")) return;
+          try {
+            await deleteDoc(doc(db, "bolsas", id));
+            this.triggerToast("Bolsa triturada do sistema.");
+          } catch(e) {
+            this.triggerToast("Erro ao deletar.");
+          }
+        },
+
+        resetBolsaForm() {
+          this.formBolsa = { nome: '', preco: '', custo: '', fotoUrl: '', descricao: '' };
+          this.editId = null;
+        },
+
+        async bootstrapPresets() {
+          this.triggerToast("Semeando acervo artístico...");
+          const presets = [
+            { nome: 'Bolsa Linho Provençal', preco: 640, custo: 180, fotoUrl: 'https://images.unsplash.com/photo-1544816155-12df9643f363?q=80&w=600&auto=format&fit=crop', descricao: 'Puro linho com acabamentos em couro vegetal.' },
+            { nome: 'Clutch Argila Seca', preco: 420, custo: 120, fotoUrl: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=600&auto=format&fit=crop', descricao: 'Algodão cru natural trançado em macramê estético.' },
+            { nome: 'Bucket Terracota', preco: 510, custo: 150, fotoUrl: 'https://images.unsplash.com/photo-1590874103328-eac38a683ce7?q=80&w=600&auto=format&fit=crop', descricao: 'Canva de algodão com tingimento artesanal e detalhes em ráfia.' }
+          ];
+
+          try {
+            for(const item of presets) {
+              await addDoc(collection(db, "bolsas"), {
+                ...item,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+              });
+            }
+            this.triggerToast("Povoamento do catálogo concluído.");
+          } catch(e) {
+            this.triggerToast("Erro ao carregar doadores.");
+          }
+        },
+
+        async saveVenda() {
+          const { bolsaId, quantidade, data } = this.formVenda;
+          if(!bolsaId || !quantidade || !data) return;
+
+          const bolsa = this.bolsas.find(b => b.id === bolsaId);
+          if(!bolsa) return;
+
+          const q = parseInt(quantidade);
+          const faturamento = q * bolsa.preco;
+          const deCusto = q * bolsa.custo;
+          const lucro = faturamento - deCusto;
+
+          try {
+            await addDoc(collection(db, "vendas"), {
+              bolsaId,
+              bolsaNome: bolsa.nome,
+              quantidade: q,
+              preco: bolsa.preco,
+              custo: bolsa.custo,
+              faturamento,
+              lucroLiquido: lucro,
+              data,
+              createdAt: new Date().toISOString()
+            });
+            this.triggerToast("Venda contabilizada.");
+            this.formVenda.quantidade = '1';
+          } catch(e) {
+            this.triggerToast("Transação falhou.");
+          }
+        },
+
+        async deleteVenda(id) {
+          if(!confirm("Deseja estornar esse registro?")) return;
+          try {
+            await deleteDoc(doc(db, "vendas", id));
+            this.triggerToast("Registro apagado.");
+          } catch(e) {
+            this.triggerToast("Erro de estorno.");
+          }
+        },
+
+        formatDate(raw) {
+          if(!raw) return '';
+          const parts = raw.split('-');
+          if(parts.length !== 3) return raw;
+          return parts[2] + '/' + parts[1] + '/' + parts[0];
+        },
+
+        get stats() {
+          let totalFaturamento = 0;
+          let totalCusto = 0;
+          this.vendas.forEach(v => {
+            totalFaturamento += v.faturamento;
+            totalCusto += (v.quantidade * v.custo);
+          });
+          const lucroLiquido = totalFaturamento - totalCusto;
+          const margemMedia = totalFaturamento > 0 ? (lucroLiquido / totalFaturamento) * 100 : 0;
+
+          return { totalFaturamento, totalCusto, lucroLiquido, margemMedia };
+        },
+
+        get filteredBolsas() {
+          if(!this.searchQuery) return this.bolsas;
+          return this.bolsas.filter(b => b.nome.toLowerCase().includes(this.searchQuery.toLowerCase()));
+        }
+      };
+    };
+  </script>
+</body>
+</html>

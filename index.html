@@ -443,7 +443,7 @@
 
   <!-- Firebase Scripts Bundle -->
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-applet.js" || "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
     import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
@@ -457,6 +457,8 @@
       appId: "1:936158199904:web:b91e925e4b7f33b70f8305",
       firestoreDatabaseId: "ai-studio-ec688b99-3f08-4494-967d-53773b408895"
     };
+
+    const allowedAdmins = ["marcelowet2@gmail.com"];
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
@@ -511,7 +513,7 @@
         listenAuthState() {
           onAuthStateChanged(auth, (user) => {
             this.loggedUser = user;
-            if (user && user.email === 'marcelowet2@gmail.com') {
+            if (user && allowedAdmins.includes(user.email || '')) {
               this.triggerToast("Acesso administrativo ativo. ✨");
               this.bindVendasSnapshot();
             } else {
@@ -558,11 +560,11 @@
           try {
             const provider = new GoogleAuthProvider();
             const res = await signInWithPopup(auth, provider);
-            if(res.user.email === 'marcelowet2@gmail.com') {
+            if (res.user.email && allowedAdmins.includes(res.user.email)) {
               this.loginModalOpen = false;
               this.adminPageActive = true;
             } else {
-              this.triggerToast("Permissão negada. Apenas Ateliê Marcelo.");
+              this.triggerToast("Permissão negada. E-mail não cadastrado como administrador.");
               await signOut(auth);
             }
           } catch(e) {

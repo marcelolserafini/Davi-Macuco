@@ -1,0 +1,17 @@
+{
+  "name": "Ateliê Belle",
+  "short_name": "Ateliê Belle",
+  "description": "Vitrine e Painel de Gestão de Aquarelas Artísticas Feitas à Mão.",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#faf7f2",
+  "theme_color": "#6e7b55",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
